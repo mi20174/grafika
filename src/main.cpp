@@ -2,6 +2,11 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+
+#include <limits>
+#include <vector>
+
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -56,8 +61,10 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 backpackPosition = glm::vec3(0.0f);
-    float backpackScale = 1.0f;
+    glm::vec3 islandPosition = glm::vec3(0.0f);
+    glm::vec3 dragonPosition = glm::vec3(1.5f);
+    float islandScale = 3.0f;
+    float dragonScale = 1.0f;
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
@@ -93,7 +100,8 @@ void ProgramState::LoadFromFile(std::string filename) {
            >> camera.Position.z
            >> camera.Front.x
            >> camera.Front.y
-           >> camera.Front.z;
+           >> camera.Front.z
+                ;
     }
 }
 
@@ -165,8 +173,10 @@ int main() {
 
     // load models
     // -----------
-    Model ourModel("resources/objects/backpack/backpack.obj");
+    Model ourModel("resources/objects/model_ostrvo/ostrvo.obj");
     ourModel.SetShaderTextureNamePrefix("material.");
+    Model model_zmaj("resources/objects/model_zmaj/zmaj.obj");
+    model_zmaj.SetShaderTextureNamePrefix("material");
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
@@ -224,11 +234,21 @@ int main() {
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model,
-                               programState->backpackPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->backpackScale));    // it's a bit too big for our scene, so scale it down
+                               programState->islandPosition); // translate it down so it's at the center of the scene
+
+        model = glm::scale(model, glm::vec3(programState->islandScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+        model = glm::translate(model,
+                               programState->dragonPosition); // translate it down so it's at the center of the scene
+
+        model = glm::scale(model, glm::vec3(programState->dragonScale));    // it's a bit too big for our scene, so scale it down
+        ourShader.setMat4("model", model);
+
+
+
+        model_zmaj.Draw(ourShader);
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
 
@@ -312,8 +332,8 @@ void DrawImGui(ProgramState *programState) {
         ImGui::Text("Hello text");
         ImGui::SliderFloat("Float slider", &f, 0.0, 1.0);
         ImGui::ColorEdit3("Background color", (float *) &programState->clearColor);
-        ImGui::DragFloat3("Backpack position", (float*)&programState->backpackPosition);
-        ImGui::DragFloat("Backpack scale", &programState->backpackScale, 0.05, 0.1, 4.0);
+        ImGui::DragFloat3("island position", (float*)&programState->islandPosition);
+        ImGui::DragFloat("island scale", &programState->islandScale, 0.05, 0.1, 4.0);
 
         ImGui::DragFloat("pointLight.constant", &programState->pointLight.constant, 0.05, 0.0, 1.0);
         ImGui::DragFloat("pointLight.linear", &programState->pointLight.linear, 0.05, 0.0, 1.0);
