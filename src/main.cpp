@@ -36,7 +36,6 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
-
 // camera
 
 float lastX = SCR_WIDTH / 2.0f;
@@ -149,6 +148,7 @@ int main() {
         return -1;
     }
 
+
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(true);
 
@@ -172,10 +172,20 @@ int main() {
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
+    // Face culling
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+
+
+    //Blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
+
     float skyboxVertices[] = {
             -1.0f,  1.0f, -1.0f,
             -1.0f, -1.0f, -1.0f,
@@ -250,6 +260,7 @@ int main() {
 
 
 
+
     // load models
     // -----------
     Model ourModel("resources/objects/model_ostrvo/ostrvo.obj");
@@ -262,6 +273,8 @@ int main() {
 
     Model model_zmaj2("resources/objects/zmaj2_model/zmaj2.obj");
     model_zmaj2.SetShaderTextureNamePrefix("material");
+
+
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(4.0f, 4.0, 0.0);
@@ -315,7 +328,7 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
-
+        glDisable(GL_CULL_FACE);
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model,
@@ -331,8 +344,11 @@ int main() {
         model = glm::scale(model, glm::vec3(programState->dragonScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
 
-
-
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 5.7f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f,1.0f,0.0f));
+        model = glm::scale(model, glm::vec3(0.9f));
+        ourShader.setMat4("model", model);
         model_zmaj.Draw(ourShader);
 
         model = glm::translate(model,
@@ -343,6 +359,8 @@ int main() {
 
 
         model_zmaj2.Draw(ourShader);
+
+        glEnable(GL_CULL_FACE);
         // Draw skybox
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
@@ -396,6 +414,7 @@ void processInput(GLFWwindow *window) {
         programState->camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -505,4 +524,5 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+
 }
