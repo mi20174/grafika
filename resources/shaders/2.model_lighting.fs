@@ -1,7 +1,6 @@
 #version 330 core
 out vec4 FragColor;
 
-
 struct DirectLight{
     vec3 direction;
 

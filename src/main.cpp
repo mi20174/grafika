@@ -46,6 +46,8 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+bool blinn = true;
+
 struct PointLight {
     glm::vec3 position;
     glm::vec3 ambient;
@@ -56,7 +58,12 @@ struct PointLight {
     float linear;
     float quadratic;
 };
-
+struct DirectLight {
+    glm::vec3 direction;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
@@ -70,6 +77,7 @@ struct ProgramState {
     float dragon2Scale = 0.5f;
 
     PointLight pointLight;
+    DirectLight dirLight;
     ProgramState()
             : camera(glm::vec3(0.0f, 0.0f, 3.0f)) {}
 
@@ -185,7 +193,7 @@ int main() {
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
-
+    Shader blendShader("resources/shaders/blending.vs", "resources/shaders/blending.fs");
     float skyboxVertices[] = {
             -1.0f,  1.0f, -1.0f,
             -1.0f, -1.0f, -1.0f,
@@ -286,7 +294,12 @@ int main() {
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
 
+    DirectLight& dirLight = programState->dirLight;
+    dirLight.direction = glm::vec3(-0.2, -1, -0.3);
 
+    dirLight.ambient = glm::vec3(1, 1, 1);
+    dirLight.diffuse = glm::vec3(1.0, 1.0, 1.0);
+    dirLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -313,6 +326,15 @@ int main() {
         // don't forget to enable shader before setting uniforms
         ourShader.use();
         pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
+
+        pointLight.ambient = glm::vec3(1, 1, 1);
+        pointLight.diffuse = glm::vec3(1.0, 1.0, 1.0);
+        pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
+        dirLight.ambient = glm::vec3(1, 1, 1);
+        dirLight.diffuse = glm::vec3(1.0, 1.0, 1.0);
+        dirLight.specular = glm::vec3(1.0, 1.0, 1.0);
+
+
         ourShader.setVec3("pointLight.position", pointLight.position);
         ourShader.setVec3("pointLight.ambient", pointLight.ambient);
         ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
@@ -322,15 +344,22 @@ int main() {
         ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
+
+        ourShader.setVec3("dirLight.position", dirLight.direction);
+        ourShader.setVec3("dirLight.ambient", dirLight.ambient);
+        ourShader.setVec3("dirLight.diffuse", dirLight.diffuse);
+        ourShader.setVec3("dirLight.specular", dirLight.specular);
+
+
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(programState->camera.Zoom),
                                                 (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+        ourShader.setInt("blinn", blinn);
 
-
-
+        //std::cout << (blinn ? "Blinn-Phong" : "Phong") << std::endl;
         glDisable(GL_CULL_FACE);
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
@@ -363,8 +392,7 @@ int main() {
 
 
         model_zmaj2.Draw(ourShader);
-
-
+        ;
         glEnable(GL_CULL_FACE);
         // Draw skybox
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -528,5 +556,10 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         } else {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
+    }
+    if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    {
+        blinn = !blinn;
+
     }
 }
