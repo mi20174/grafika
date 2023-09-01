@@ -1,4 +1,5 @@
 Projekat iz racunarske grafike
+
 Koriscen je skelet projekta project base kao i materijali iz LearnOpenGL repozitorijuma.
 
 
