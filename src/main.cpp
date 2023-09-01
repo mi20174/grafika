@@ -244,13 +244,13 @@ int main() {
 
 
     //loading textures
-   vector<std::string> faces {
-            FileSystem::getPath("resources/textures/skybox/heaven_rt.jpg"),
-            FileSystem::getPath("resources/textures/skybox/heaven_lf.jpg"),
-            FileSystem::getPath("resources/textures/skybox/heaven_up.jpg"),
-            FileSystem::getPath("resources/textures/skybox/heaven_dn.jpg"),
-            FileSystem::getPath("resources/textures/skybox/heaven_ft.jpg"),
-            FileSystem::getPath("resources/textures/skybox/heaven_bk.jpg"),
+    vector<std::string> faces {
+            FileSystem::getPath("resources/textures/skybox/xpos.png"),
+            FileSystem::getPath("resources/textures/skybox/xneg.png"),
+            FileSystem::getPath("resources/textures/skybox/ypos.png"),
+            FileSystem::getPath("resources/textures/skybox/yneg.png"),
+            FileSystem::getPath("resources/textures/skybox/zpos.png"),
+            FileSystem::getPath("resources/textures/skybox/zneg.png"),
 
     };
 
@@ -328,6 +328,9 @@ int main() {
         glm::mat4 view = programState->camera.GetViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
+
+
+
         glDisable(GL_CULL_FACE);
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
@@ -344,6 +347,7 @@ int main() {
         model = glm::scale(model, glm::vec3(programState->dragonScale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
 
+
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 5.7f, 0.0f));
         model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f,1.0f,0.0f));
@@ -359,6 +363,7 @@ int main() {
 
 
         model_zmaj2.Draw(ourShader);
+
 
         glEnable(GL_CULL_FACE);
         // Draw skybox
@@ -524,5 +529,4 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
-
 }
