@@ -31,6 +31,8 @@ void processInput(GLFWwindow *window);
 
 unsigned int loadCubemap(vector<std::string> faces);
 
+unsigned int loadTexture(const char *path);
+
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 
 // settings
@@ -72,9 +74,9 @@ struct ProgramState {
     glm::vec3 islandPosition = glm::vec3(0.0f);
     glm::vec3 dragonPosition = glm::vec3(1.5f);
     float islandScale = 3.0f;
-    float dragonScale = 1.0f;
+    float dragonScale = 1.3f;
     glm::vec3 dragon2Position = glm::vec3(2.5f);
-    float dragon2Scale = 0.5f;
+    float dragon2Scale = 1.0f;
 
     PointLight pointLight;
     DirectLight dirLight;
@@ -249,6 +251,38 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    float transparentVertices[] = {
+            // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+
+            0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+            1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+            1.0f,  0.5f,  0.0f,  1.0f,  0.0f
+    };
+
+    unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+
+    unsigned int transparentTexture = loadTexture("resources/textures/cloud.png");
+    vector<glm::vec3> clouds
+            {
+                    glm::vec3(-4.3f, 3.5f, -2.3f),
+                    glm::vec3( 6.0f, 4.5f, -1.6f),
+                    glm::vec3( 0.0f, 4.0f, -1.6f)
+
+            };
+
 
 
     //loading textures
@@ -303,6 +337,10 @@ int main() {
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    blendShader.use();
+    blendShader.setInt("texture1", 0);
+
 
     // render loop
     // -----------
@@ -360,7 +398,9 @@ int main() {
         ourShader.setInt("blinn", blinn);
 
         //std::cout << (blinn ? "Blinn-Phong" : "Phong") << std::endl;
-        glDisable(GL_CULL_FACE);
+
+        glEnable(GL_CULL_FACE);
+
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model,
@@ -390,10 +430,34 @@ int main() {
         model = glm::scale(model, glm::vec3(programState->dragon2Scale));    // it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
 
-
         model_zmaj2.Draw(ourShader);
-        ;
-        glEnable(GL_CULL_FACE);
+
+
+        glDisable(GL_CULL_FACE);
+        blendShader.use();
+        glBindVertexArray(transparentVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, transparentTexture);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(21.4f,1.7f,-9.8f));
+        model = glm::scale(model, glm::vec3(3.0f));
+        blendShader.setMat4("projection", projection);
+        blendShader.setMat4("view", view);
+        blendShader.setMat4("model", model);
+        for (const glm::vec3& c : clouds)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, c);
+            model = glm::rotate(model, glm::radians(-90.0f),glm::vec3(0.0f,1.0f,0.0f));
+            model = glm::scale(model,glm::vec3(3.0f));
+            blendShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        }
+
+
+
+
         // Draw skybox
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
@@ -407,7 +471,6 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthFunc(GL_LESS);
-
 
 
         if (programState->ImGuiEnabled)
@@ -546,7 +609,39 @@ void DrawImGui(ProgramState *programState) {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+unsigned int loadTexture(char const *path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
 
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data) {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_F1 && action == GLFW_PRESS) {
         programState->ImGuiEnabled = !programState->ImGuiEnabled;
