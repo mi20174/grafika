@@ -8,7 +8,7 @@ Dodatne teme:
 
 Iz grupe A:
 
-    -Cubemaps(SkyBox)
+   -Cubemaps(SkyBox)
 
 
 
