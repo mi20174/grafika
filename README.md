@@ -48,3 +48,5 @@ F1 otvaranje/zatvaranje ImGui prozora
 **Short Video:**
 
 [Snimak projekta](https://www.youtube.com/watch?v=W-DoMilqa-A)
+
+Autor : Nikola Krstajic 174/2020
