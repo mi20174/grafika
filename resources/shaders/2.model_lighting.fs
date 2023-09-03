@@ -3,7 +3,6 @@ out vec4 FragColor;
 
 struct DirectLight{
     vec3 direction;
-
      vec3 specular;
      vec3 diffuse;
      vec3 ambient;
@@ -38,7 +37,7 @@ uniform Material material;
 
 uniform vec3 viewPosition;
 
-// calculates the color when using a point light.
+// calculates the color when using a direction light.
 vec3 CalcDirLight(DirectLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 
@@ -54,7 +53,7 @@ vec3 CalcDirLight(DirectLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     vec3 specular = light.specular * spec * vec3(texture(material.texture_specular1, TexCoords));
     return (ambient +diffuse + specular );
 }
-
+// calculates the color when using a point light.
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     vec3 lightDir = normalize(light.position - fragPos);
